@@ -1,0 +1,141 @@
+/* Responsive Design - Mobile First */
+
+/* Tablets y dispositivos medianos (768px y menos) */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+
+    .subtitle {
+        font-size: 1rem;
+    }
+
+    .scanner-section,
+    .table-section {
+        padding: 20px;
+    }
+
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .table-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .table-controls {
+        width: 100%;
+    }
+
+    .table-controls button {
+        flex: 1;
+    }
+
+    .controls {
+        flex-direction: column;
+    }
+
+    .controls button {
+        width: 100%;
+    }
+
+    th, td {
+        padding: 12px 8px;
+        font-size: 0.875rem;
+    }
+
+    th {
+        font-size: 0.75rem;
+    }
+}
+
+/* Móviles pequeños (480px y menos) */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    header {
+        padding: 20px 15px;
+        margin-bottom: 20px;
+    }
+
+    header h1 {
+        font-size: 1.75rem;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+    }
+
+    .scanner-section,
+    .table-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .scanner-container {
+        aspect-ratio: 1/1;
+    }
+
+    .table-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.875rem;
+    }
+
+    .btn-danger {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    th, td {
+        padding: 10px 6px;
+        font-size: 0.8rem;
+    }
+
+    th:first-child,
+    td:first-child {
+        display: none;
+    }
+
+    .empty-state {
+        padding: 40px 15px;
+    }
+
+    .empty-state p {
+        font-size: 1rem;
+    }
+
+    footer {
+        padding: 20px 10px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Tablets en modo landscape */
+@media (min-width: 481px) and (max-width: 768px) and (orientation: landscape) {
+    .scanner-container {
+        max-width: 400px;
+        aspect-ratio: 16/9;
+    }
+}
+
+/* Escritorio grande (1200px y más) */
+@media (min-width: 1200px) {
+    .container {
+        padding: 40px;
+    }
+
+    header h1 {
+        font-size: 3rem;
+    }
+
+    .subtitle {
+        font-size: 1.25rem;
+    }
+}
