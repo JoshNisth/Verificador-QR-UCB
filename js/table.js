@@ -1,10 +1,40 @@
-// Módulo para manejar la tabla de resultados y exportar a CSV
+// Módulo para manejar la tabla de resultados, persistir en localStorage y exportar a CSV
+const STORAGE_KEY = 'verificador_qr_rows_v1';
 const rows = [];
 
 export function initTable(tableEl){
   // clean
   const tbody = tableEl.querySelector('tbody');
   tbody.innerHTML = '';
+  // load persisted rows from localStorage
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)){
+        // populate rows array and render them in order
+        parsed.forEach(r => rows.push(r));
+        // render
+        for(const r of parsed){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(r.idx)}</td>
+            <td>${escapeHtml(r.date||'')}</td>
+            <td>${escapeHtml(r.time||'')}</td>
+            <td>${escapeHtml(r.name||r.text||'')}</td>
+            <td>${escapeHtml(r.document||'')}</td>
+            <td>${escapeHtml(r.career||'')}</td>
+            <td>${escapeHtml(r.email||'')}</td>
+            <td>${escapeHtml(r.phone||'')}</td>
+            <td>${escapeHtml(r.period||'')}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+  }catch(e){
+    console.warn('failed to load persisted rows', e);
+  }
 }
 
 // fields can be string (legacy) or object {name, document, career, url, text}
@@ -35,12 +65,15 @@ export function addRow(tableEl, fields){
     <td>${escapeHtml(rowObj.period || '')}</td>
   `;
   tbody.prepend(tr);
+  // persist
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }catch(e){ console.warn('persist failed', e); }
 }
 
 export function clear(tableEl){
   rows.length = 0;
   const tbody = tableEl.querySelector('tbody');
   tbody.innerHTML = '';
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){ console.warn('clear storage failed', e); }
 }
 
 function formatDateForFilename(d = new Date()){

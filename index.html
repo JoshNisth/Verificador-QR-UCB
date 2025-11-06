@@ -71,6 +71,19 @@
       </section>
     </main>
 
+    <!-- Confirm modal for clearing data -->
+    <div id="confirmModal" class="confirm-modal hidden" aria-hidden="true">
+      <div class="confirm-card">
+        <h3>Confirmar borrado</h3>
+        <p>Ingresa la contraseña para borrar todos los registros.</p>
+        <input id="confirmPassword" type="password" placeholder="Contraseña" aria-label="Contraseña" />
+        <div class="confirm-actions">
+          <button id="confirmCancel" class="btn ghost">Cancelar</button>
+          <button id="confirmOk" class="btn primary">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <small>Josue Nisthaus-STPA</small>
     </footer>

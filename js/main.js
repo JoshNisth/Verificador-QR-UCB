@@ -174,7 +174,60 @@ exportBtn.addEventListener('click', ()=>{
   if(ok) setStatus('exportado'); else setStatus('no hay datos para exportar');
 });
 
-clearBtn.addEventListener('click', ()=>{ clear(resultsTable); setStatus('limpiado'); });
+// Confirm-before-clear flow
+const confirmModal = document.getElementById('confirmModal');
+const confirmPassword = document.getElementById('confirmPassword');
+const confirmOk = document.getElementById('confirmOk');
+const confirmCancel = document.getElementById('confirmCancel');
+const CLEAR_PASSWORD = 'Aqmdla.1';
+
+clearBtn.addEventListener('click', ()=>{
+  // open modal and pause scanning
+  scanningPaused = true;
+  if(confirmModal){ confirmModal.classList.remove('hidden'); confirmModal.setAttribute('aria-hidden','false'); }
+  if(confirmPassword){ confirmPassword.value = ''; confirmPassword.focus(); }
+});
+
+function closeConfirmModal(){
+  if(confirmModal){ confirmModal.classList.add('hidden'); confirmModal.setAttribute('aria-hidden','true'); }
+  scanningPaused = false;
+  if(overlayUi && overlayUi.classList.contains('hidden')){
+    // only set status ready if overlay not showing
+    setStatus('listo');
+  }
+}
+
+confirmCancel && confirmCancel.addEventListener('click', ()=>{
+  closeConfirmModal();
+});
+
+confirmOk && confirmOk.addEventListener('click', ()=>{
+  const v = confirmPassword ? String(confirmPassword.value || '') : '';
+  if(v === CLEAR_PASSWORD){
+    clear(resultsTable);
+    // also clear in-memory seen URLs
+    seenUrls.clear();
+    setStatus('limpiado');
+    closeConfirmModal();
+  }else{
+    setStatus('contraseña incorrecta');
+    if(confirmPassword){ confirmPassword.value = ''; confirmPassword.focus(); }
+  }
+});
+
+// allow Enter to submit password
+if(confirmPassword){
+  confirmPassword.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      confirmOk && confirmOk.click();
+    }
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      confirmCancel && confirmCancel.click();
+    }
+  });
+}
 
 // (Removed file upload handling: scanning is only via camera per requirements)
 
