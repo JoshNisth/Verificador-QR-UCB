@@ -30,12 +30,23 @@
         <div id="status" class="status">Estado: listo</div>
       </section>
 
+      <!-- Overlay UI: loading / pause between scans -->
+      <div id="overlayUi" class="overlay-ui hidden" aria-hidden="true">
+        <div class="overlay-card">
+          <div class="spinner" aria-hidden="true"></div>
+          <div id="overlayMessage" class="overlay-message">Consultando...</div>
+          <div class="overlay-actions">
+            <button id="continueBtn" class="btn primary">Continuar escaneo</button>
+          </div>
+        </div>
+      </div>
+
       <section class="results card">
         <div class="results-header">
           <h2>Registros</h2>
           <div class="actions">
-            <button id="exportBtn">Exportar a Excel (CSV)</button>
-            <button id="clearBtn">Limpiar</button>
+            <button id="exportBtn" class="btn primary">Exportar a Excel (CSV)</button>
+            <button id="clearBtn" class="btn ghost">Limpiar</button>
           </div>
         </div>
 
@@ -44,6 +55,7 @@
             <thead>
               <tr>
                 <th>#</th>
+                <th>Fecha</th>
                 <th>Hora</th>
                 <th>Nombre</th>
                 <th>Documento</th>
@@ -60,7 +72,7 @@
     </main>
 
     <footer class="site-footer">
-      <small>Preparado para GitHub Pages — Proyecto modular y responsive</small>
+      <small>Josue Nisthaus-STPA</small>
     </footer>
 
     <!-- jsQR (non-module global) -->

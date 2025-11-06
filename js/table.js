@@ -10,9 +10,10 @@ export function initTable(tableEl){
 // fields can be string (legacy) or object {name, document, career, url, text}
 export function addRow(tableEl, fields){
   const now = new Date();
-  const ts = now.toLocaleString();
+  const date = now.toLocaleDateString();
+  const time = now.toLocaleTimeString();
   const idx = rows.length + 1;
-  let rowObj = {idx, ts};
+  let rowObj = {idx, date, time};
   if(typeof fields === 'string'){
     rowObj.text = fields;
   }else{
@@ -24,7 +25,8 @@ export function addRow(tableEl, fields){
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${idx}</td>
-    <td>${ts}</td>
+    <td>${escapeHtml(rowObj.date || date)}</td>
+    <td>${escapeHtml(rowObj.time || time)}</td>
     <td>${escapeHtml(rowObj.name || rowObj.text || '')}</td>
     <td>${escapeHtml(rowObj.document || '')}</td>
     <td>${escapeHtml(rowObj.career || '')}</td>
@@ -41,20 +43,35 @@ export function clear(tableEl){
   tbody.innerHTML = '';
 }
 
-export function exportCSV(filename = 'verificador_qr.csv'){
+function formatDateForFilename(d = new Date()){
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+export function exportCSV(filename){
   if(rows.length === 0) return null;
-  const header = ['#','Hora','Nombre','Documento','Carrera','Correo','Celular','Periodo inscrito'];
-  const lines = [header.join(',')];
+  // default filename: Lista (fecha de hoy)
+  if(!filename) filename = `Lista (${formatDateForFilename()}).csv`;
+
+  // Use semicolon as separator so Excel in many locales opens columns correctly
+  const sep = ';';
+  const header = ['#','Fecha','Hora','Nombre','Documento','Carrera','Correo','Celular','Periodo inscrito'];
+  const lines = [header.join(sep)];
   for(const r of rows){
     const safeName = (r.name||r.text||'').replace(/"/g,'""');
     const safeDoc = (r.document||'').replace(/"/g,'""');
     const safeCareer = (r.career||'').replace(/"/g,'""');
     const safeEmail = (r.email||'').replace(/"/g,'""');
     const safePhone = (r.phone||'').replace(/"/g,'""');
-  const safePeriod = (r.period||'').replace(/"/g,'""');
-  lines.push(`${r.idx},"${r.ts}","${safeName}","${safeDoc}","${safeCareer}","${safeEmail}","${safePhone}","${safePeriod}"`);
+    const safePeriod = (r.period||'').replace(/"/g,'""');
+    // Quote every field to be safe and join with separator
+    const row = [r.idx, r.date || '', r.time || '', safeName, safeDoc, safeCareer, safeEmail, safePhone, safePeriod]
+      .map(v => `"${String(v||'')}"`).join(sep);
+    lines.push(row);
   }
-  const csv = '\uFEFF' + lines.join('\n'); // BOM for Excel
+  const csv = '\uFEFF' + lines.join('\r\n'); // BOM for Excel + CRLF
   const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

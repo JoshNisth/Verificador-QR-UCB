@@ -11,6 +11,11 @@ const overlay = document.getElementById('overlay');
 
 let currentDeviceId = null;
 let lastScanned = null; // debounce
+let scanningPaused = false; // when true, ignore detections until resumed
+const seenUrls = new Set(); // avoid duplicate registrations per session
+let currentAbortController = null;
+let resolveInProgress = false;
+let autoCloseTimer = null;
 
 // sizing overlay to match video
 function resizeOverlay(){
@@ -51,13 +56,56 @@ async function startScanning(){
     videoElement: video,
     deviceId: currentDeviceId,
     onDecode: async (code)=>{
+      if(scanningPaused) return; // ignore while paused
       const text = code && code.data ? code.data : '';
+      if(!text) return;
+
+      // micro-debounce to avoid many detections in quick succession
       if(text && text === lastScanned) return;
       lastScanned = text;
-      setTimeout(()=>{ lastScanned = null; }, 1500);
+      setTimeout(()=>{ lastScanned = null; }, 800);
+
       try{ drawBoundingBox(code); }catch(e){}
-      const parsed = await resolveQrContent(text);
+
+      // If URL and already seen in this session, ignore
+      try{
+        const u = new URL(text);
+        if(seenUrls.has(u.href)){
+          setStatus('duplicado (ya registrado)');
+          return;
+        }
+      }catch(_){ }
+
+      // Pause scanning and show overlay while resolving (abortable)
+      currentAbortController = new AbortController();
+      resolveInProgress = true;
+      pauseForResolve();
+      let parsed;
+      try{
+        parsed = await resolveQrContent(text, currentAbortController.signal);
+      }catch(err){
+        // aborted or network error
+        if(err && err.name === 'AbortError'){
+          setStatus('cancelado');
+        }else{
+          console.warn('resolveQrContent error', err);
+          setStatus('error al resolver');
+        }
+        // resume scanning
+        scanningPaused = false;
+        currentAbortController = null;
+        resolveInProgress = false;
+        return;
+      }
       addRow(resultsTable, parsed);
+
+      // mark seen URL to avoid duplicates
+      if(parsed && parsed.url) seenUrls.add(parsed.url);
+
+      // show success message; change overlay to 'Continuar' and auto-close
+      currentAbortController = null;
+      resolveInProgress = false;
+      showPostScan(parsed);
     },
     statusCallback: (s)=> setStatus(s)
   });
@@ -69,6 +117,56 @@ function stopScanning(){
   try{ stopScanner(); }catch(_){}
   if(overlay){ const ctx = overlay.getContext('2d'); ctx && ctx.clearRect(0,0,overlay.width, overlay.height); }
   setStatus('detenido');
+}
+
+// Overlay UI helpers (pause/resume + messages)
+const overlayUi = document.getElementById('overlayUi');
+const overlayMessage = document.getElementById('overlayMessage');
+const continueBtn = document.getElementById('continueBtn');
+
+function pauseForResolve(){
+  scanningPaused = true;
+  if(overlayUi){ overlayUi.classList.remove('hidden'); overlayUi.setAttribute('aria-hidden','false'); }
+  if(overlayMessage) overlayMessage.textContent = 'Consultando...';
+  // show cancel button while resolving
+  if(continueBtn) continueBtn.textContent = 'Cancelar';
+  // clear any pending auto-close timer
+  if(autoCloseTimer){ clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+}
+
+function showPostScan(parsed){
+  if(overlayMessage){
+    overlayMessage.textContent = parsed && (parsed.name || parsed.url) ? 'Registro agregado' : 'Registro agregado (sin datos)';
+  }
+  if(overlayUi){ overlayUi.classList.remove('hidden'); overlayUi.setAttribute('aria-hidden','false'); }
+  // switch button to continue and auto-close after 3 seconds
+  if(continueBtn) continueBtn.textContent = 'Continuar';
+  if(autoCloseTimer) clearTimeout(autoCloseTimer);
+  autoCloseTimer = setTimeout(()=>{
+    scanningPaused = false;
+    if(overlayUi){ overlayUi.classList.add('hidden'); overlayUi.setAttribute('aria-hidden','true'); }
+    setStatus('listo');
+    lastScanned = null;
+    autoCloseTimer = null;
+  }, 1000);
+}
+
+if(continueBtn){
+  continueBtn.addEventListener('click', ()=>{
+    // If resolving is in progress, treat this as a cancel
+    if(resolveInProgress && currentAbortController){
+      try{ currentAbortController.abort(); }catch(e){}
+      // abort handler in onDecode will resume scanning and set status
+      return;
+    }
+
+    // otherwise, it's a Continue action -> hide overlay and resume
+    scanningPaused = false;
+    if(autoCloseTimer){ clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+    if(overlayUi){ overlayUi.classList.add('hidden'); overlayUi.setAttribute('aria-hidden','true'); }
+    setStatus('listo');
+    lastScanned = null; // allow same code again if necessary
+  });
 }
 
 exportBtn.addEventListener('click', ()=>{
@@ -106,7 +204,7 @@ function drawBoundingBox(code){
 }
 
 // Try to resolve QR content: if URL try fetch and parse, else return text
-async function resolveQrContent(text){
+async function resolveQrContent(text, signal){
   const result = {text, url: null, name: '', document: '', career: ''};
   if(!text) return result;
   // If looks like URL
@@ -115,7 +213,7 @@ async function resolveQrContent(text){
     result.url = url.href;
     // attempt to fetch page (may fail due to CORS)
     try{
-      const resp = await fetch(url.href, {mode:'cors'});
+      const resp = await fetch(url.href, {mode:'cors', signal});
       if(resp.ok){
         const html = await resp.text();
         const parsed = parsePersonFromHTML(html, url.href);
@@ -125,17 +223,20 @@ async function resolveQrContent(text){
         return result;
       }
     }catch(fetchErr){
+      // if aborted, rethrow so caller can handle
+      if(fetchErr && fetchErr.name === 'AbortError') throw fetchErr;
       // CORS or network error: try proxy if available (server-side fetch)
       console.warn('fetch error, trying proxy', fetchErr);
       try{
         // proxy expected to run on localhost:9000
         const proxyUrl = 'http://localhost:9000/fetch?url=' + encodeURIComponent(url.href);
-        const pr = await fetch(proxyUrl);
+        const pr = await fetch(proxyUrl, {signal});
         if(pr.ok){
           const json = await pr.json();
           return Object.assign(result, json);
         }
       }catch(proxyErr){
+        if(proxyErr && proxyErr.name === 'AbortError') throw proxyErr;
         console.warn('proxy fetch failed', proxyErr);
       }
       // fallback: return url only
