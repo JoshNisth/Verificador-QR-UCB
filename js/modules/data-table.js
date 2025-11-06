@@ -110,6 +110,7 @@ export class DataTable {
             hour12: false
         };
         
-        return new Intl.DateTimeFormat('es-BO', options).format(date);
+        // Use 'es' locale for better browser compatibility
+        return new Intl.DateTimeFormat('es', options).format(date);
     }
 }

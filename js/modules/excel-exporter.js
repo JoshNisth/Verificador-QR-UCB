@@ -54,7 +54,7 @@ export class ExcelExporter {
         // Hoja de resumen
         const summary = [
             { 'Descripción': 'Total de códigos escaneados', 'Valor': data.length },
-            { 'Descripción': 'Fecha de exportación', 'Valor': new Date().toLocaleString('es-BO') }
+            { 'Descripción': 'Fecha de exportación', 'Valor': new Date().toLocaleString('es') }
         ];
         const summarySheet = XLSX.utils.json_to_sheet(summary);
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumen');
