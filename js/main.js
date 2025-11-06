@@ -12,7 +12,7 @@ const overlay = document.getElementById('overlay');
 let currentDeviceId = null;
 let lastScanned = null; // debounce
 let scanningPaused = false; // when true, ignore detections until resumed
-const seenUrls = new Set(); // avoid duplicate registrations per session
+const seenCodes = new Set(); // store estudiante param values to detect duplicates across encodings
 let currentAbortController = null;
 let resolveInProgress = false;
 let autoCloseTimer = null;
@@ -66,15 +66,28 @@ async function startScanning(){
       setTimeout(()=>{ lastScanned = null; }, 800);
 
       try{ drawBoundingBox(code); }catch(e){}
-
-      // If URL and already seen in this session, ignore
-      try{
-        const u = new URL(text);
-        if(seenUrls.has(u.href)){
-          setStatus('duplicado (ya registrado)');
+        // Validate that QR is the expected credential URL and extract estudiante param
+        let estudianteCode = null;
+        try{
+          const u = new URL(text);
+          const hostOk = (u.hostname === 'academico.ucb.edu.bo' || u.hostname.endsWith('.academico.ucb.edu.bo'));
+          const pathOk = (u.pathname === '/AcademicoNacional/credencial');
+          if(!hostOk || !pathOk || !u.searchParams.has('estudiante')){
+            flashTemporaryMessage('QR inválido', 1400);
+            return;
+          }
+          estudianteCode = u.searchParams.get('estudiante');
+          if(!estudianteCode){ flashTemporaryMessage('QR inválido', 1400); return; }
+          // normalize: treat as duplicate if same estudiante code already scanned
+          if(seenCodes.has(estudianteCode)){
+            flashTemporaryMessage('Ya fue escaneado', 1400);
+            return;
+          }
+        }catch(_){
+          // not a URL -> invalid
+          flashTemporaryMessage('QR inválido', 1400);
           return;
         }
-      }catch(_){ }
 
       // Pause scanning and show overlay while resolving (abortable)
       currentAbortController = new AbortController();
@@ -99,8 +112,8 @@ async function startScanning(){
       }
       addRow(resultsTable, parsed);
 
-      // mark seen URL to avoid duplicates
-      if(parsed && parsed.url) seenUrls.add(parsed.url);
+  // mark seen estudiante code to avoid duplicates (if available)
+  if(estudianteCode) seenCodes.add(estudianteCode);
 
       // show success message; change overlay to 'Continuar' and auto-close
       currentAbortController = null;
@@ -123,6 +136,19 @@ function stopScanning(){
 const overlayUi = document.getElementById('overlayUi');
 const overlayMessage = document.getElementById('overlayMessage');
 const continueBtn = document.getElementById('continueBtn');
+let flashTimer = null;
+
+function flashTemporaryMessage(msg, ms = 1500){
+  // don't interrupt an active resolve overlay
+  if(resolveInProgress) return;
+  if(flashTimer) clearTimeout(flashTimer);
+  if(overlayUi){ overlayUi.classList.remove('hidden'); overlayUi.setAttribute('aria-hidden','false'); }
+  if(overlayMessage) overlayMessage.textContent = msg;
+  flashTimer = setTimeout(()=>{
+    if(overlayUi && !resolveInProgress){ overlayUi.classList.add('hidden'); overlayUi.setAttribute('aria-hidden','true'); }
+    flashTimer = null;
+  }, ms);
+}
 
 function pauseForResolve(){
   scanningPaused = true;
@@ -148,7 +174,7 @@ function showPostScan(parsed){
     setStatus('listo');
     lastScanned = null;
     autoCloseTimer = null;
-  }, 1000);
+  }, 3000);
 }
 
 if(continueBtn){
@@ -206,7 +232,7 @@ confirmOk && confirmOk.addEventListener('click', ()=>{
   if(v === CLEAR_PASSWORD){
     clear(resultsTable);
     // also clear in-memory seen URLs
-    seenUrls.clear();
+    seenCodes.clear();
     setStatus('limpiado');
     closeConfirmModal();
   }else{
