@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Verificador QR - UCB</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Verificador QR - UCB</h1>
+      <p class="lead">Escanea QR desde la cámara y exporta los resultados a Excel (CSV).</p>
+    </header>
+
+    <main class="container">
+      <section class="scanner card">
+        <div class="controls">
+          <label for="deviceSelect">Cámara:</label>
+          <select id="deviceSelect"></select>
+          <!-- Cámara se inicia automáticamente al cargar la página -->
+        </div>
+
+        <div class="preview">
+          <div class="video-wrap">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="overlay"></canvas>
+          </div>
+        </div>
+
+        <div id="status" class="status">Estado: listo</div>
+      </section>
+
+      <section class="results card">
+        <div class="results-header">
+          <h2>Registros</h2>
+          <div class="actions">
+            <button id="exportBtn">Exportar a Excel (CSV)</button>
+            <button id="clearBtn">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Hora</th>
+                <th>Nombre</th>
+                <th>Documento</th>
+                <th>Carrera</th>
+                <th>Correo</th>
+                <th>Celular</th>
+                <th>Periodo inscrito</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <small>Preparado para GitHub Pages — Proyecto modular y responsive</small>
+    </footer>
+
+    <!-- jsQR (non-module global) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- App modules -->
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
