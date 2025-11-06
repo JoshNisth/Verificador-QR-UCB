@@ -7,7 +7,6 @@
 }
 /* Hide native scrollbars visually while preserving scrolling (responsive) */
 html, body {
-  overflow-x: hidden; /* prevent horizontal scroll */
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
@@ -77,6 +76,24 @@ tbody td{padding:.5rem;border-bottom:1px solid rgba(255,255,255,0.03);font-size:
 @media(min-width:800px){
   .container{grid-template-columns:540px 1fr}
   video{max-width:100%}
+}
+
+/* Mobile responsiveness: center container and make scanner/table stackable and scrollable */
+@media(max-width:800px){
+  .container{max-width:100%;margin:1rem auto;padding:0 0.75rem;grid-template-columns:1fr;gap:.75rem}
+  .preview{flex-direction:column}
+  /* Make camera preview smaller on mobile to avoid long vertical scroll */
+  .video-wrap{flex-basis:100%;max-width:100%;max-height:40vh;overflow:hidden;border-radius:8px}
+  video{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+  .results-header{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem}
+  .results-header h2{font-size:1.15rem}
+  /* Ensure action buttons are visible and touch-friendly on mobile */
+  .results-header .actions{width:100%;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+  .results-header .actions .btn{padding:.5rem .75rem;flex:1 1 auto;min-width:120px}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:720px;width:100%;font-size:0.95rem}
+  thead th{font-size:0.95rem;padding:.45rem}
+  tbody td{padding:.45rem}
 }
 
 /* small helpers */
